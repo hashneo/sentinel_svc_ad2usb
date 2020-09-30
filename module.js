@@ -9,6 +9,7 @@ function _module(config) {
 
     const redis = require('redis');
     var moment = require('moment');
+    const logger = require('sentinel-common').logger;
 
     let pub = redis.createClient(
         {
@@ -19,7 +20,7 @@ function _module(config) {
     );
 
     pub.on('end', function(e){
-        console.log('Redis hung up, committing suicide');
+        logger.info('Redis hung up, committing suicide');
         process.exit(1);
     });
 
@@ -45,30 +46,30 @@ function _module(config) {
 
     deviceCache.on( 'set', function( key, value ){
         let data = JSON.stringify( { module: global.moduleName, id : key, value : value });
-        console.log( 'sentinel.device.insert => ' + data );
+        logger.info( 'sentinel.device.insert => ' + data );
         pub.publish( 'sentinel.device.insert', data);
     });
 
     deviceCache.on( 'delete', function( key ){
         let data = JSON.stringify( { module: global.moduleName, id : key });
-        console.log( 'sentinel.device.delete => ' + data );
+        logger.info( 'sentinel.device.delete => ' + data );
         pub.publish( 'sentinel.device.delete', data);
     });
 
     statusCache.on( 'set', function( key, value ){
         let data = JSON.stringify( { module: global.moduleName, id : key, value : value });
-        console.log( 'sentinel.device.update => ' + data );
+        logger.debug( 'sentinel.device.update => ' + data );
         pub.publish( 'sentinel.device.update', data);
     });
 
 	var that = this;
 
     panel.on('raw.data', (data) => {
-        //console.log(data);
+        logger.debug(data);
     });
 
     panel.on('rfx.data', (data) => {
-        //console.log(data);
+        logger.debug(data);
     });
 
     panel.on('zone.trip', (data) => {
@@ -85,7 +86,7 @@ function _module(config) {
 
             });
 
-        console.log(data);
+        logger.debug(data);
     });
 
     panel.on('zone.clear', (data) => {
@@ -101,7 +102,7 @@ function _module(config) {
 
             });
 
-        console.log(data);
+        logger.debug(data);
     });
 
     this.getDevices = () => {
@@ -265,7 +266,7 @@ function _module(config) {
 
                 })
                 .catch ( (err) => {
-                    console.log(err);
+                    logger.error(err);
                 });
 
             fulfill();
@@ -282,7 +283,7 @@ function _module(config) {
                         setTimeout(pollSystem, 10000);
                     })
                     .catch((err) => {
-                        console.error(err);
+                        logger.error(err);
                         setTimeout(pollSystem, 60000);
                     });
 
@@ -292,7 +293,7 @@ function _module(config) {
 
         })
         .catch((err) => {
-            console.error(err);
+            logger.error(err);
             process.exit(1);
         });
 

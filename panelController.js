@@ -2,6 +2,7 @@
 
 const EventEmitter = require('events').EventEmitter;
 const fs = require('fs');
+const logger = require('sentinel-common').logger;
 
 function PanelController(address, port){
 
@@ -121,21 +122,21 @@ function PanelController(address, port){
         client.setKeepAlive(true,20000);
         client.setTimeout(60000);
 
-        console.log(`connecting to ${address}:${port}`);
+        logger.debug(`connecting to ${address}:${port}`);
         client.connect(port, address);
 
         client.on('timeout', () => {
-            console.log('connection timeout');
+            logger.debug('connection timeout');
             reconnect();
         });
 
         client.on('error', (err) => {
-            console.log(`connection err => ${err}`);
+            logger.debug(`connection err => ${err}`);
             reconnect();
         });
 
         client.on('close', () => {
-            console.log('connection closed');
+            logger.debug('connection closed');
             reconnect();
         });
 
@@ -262,7 +263,7 @@ function PanelController(address, port){
         if ( data.length === 0 )
             return;
 
-        console.log (`==> '${data}'`);
+        logger.debug (`==> '${data}'`);
 
         that.emit('raw.data', data);
 
@@ -278,7 +279,7 @@ function PanelController(address, port){
         });
 
         if (!wasMatched){
-           console.log( `${data} - not matched!`)
+           logger.debug( `${data} - not matched!`)
         }
 
     }
@@ -451,7 +452,7 @@ function PanelController(address, port){
                         return readAndProcessZones();
                     })
                     .then( (d) => {
-                        console.log(d);
+                        logger.debug(d);
 
                         return send('00', (panel) => {
                             return panel.message === 'Enter * or #                    ';
@@ -478,7 +479,7 @@ function PanelController(address, port){
     function send ( cmd, func, t ) {
         return new Promise( (fulfill, reject) => {
 
-            console.log (`<== '${cmd}'`);
+            logger.debug (`<== '${cmd}'`);
 
             panelCommand = {
                 write: () => {

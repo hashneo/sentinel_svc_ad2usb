@@ -11,6 +11,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const redis = require('redis');
+const logger = require('sentinel-common').logger;
 
 const uuid = require('uuid');
 
@@ -111,7 +112,7 @@ consul.kv.get(`config/sentinel/${moduleName}`, function(err, result) {
                 }, 5000 );
 
                 if (swaggerExpress.runner.swagger.paths['/health']) {
-                    console.log(`you can get /health?id=${serviceId} on port ${port}`);
+                    logger.info(`you can get /health?id=${serviceId} on port ${port}`);
                 }
                 global.module = require(`./module.js`)(config);
             });
@@ -123,7 +124,7 @@ consul.kv.get(`config/sentinel/${moduleName}`, function(err, result) {
 });
 
 process.on('unhandledRejection', (reason, p) => {
-    console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+    logger.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
     process.exit(1);
 });
 
