@@ -99,7 +99,7 @@ function PanelController(address, port){
                     });
 
                     if (zi.type !== 0) {
-                        zones[zi.number] = zi;
+                        zones[parseInt(zi.number)] = zi;
                     }
                 });
 

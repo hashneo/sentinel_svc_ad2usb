@@ -65,11 +65,9 @@ function _module(config) {
 	var that = this;
 
     panel.on('raw.data', (data) => {
-        logger.debug(data);
     });
 
     panel.on('rfx.data', (data) => {
-        logger.debug(data);
     });
 
     panel.on('zone.trip', (data) => {
@@ -86,7 +84,7 @@ function _module(config) {
 
             });
 
-        logger.debug(data);
+        logger.debug(JSON.stringify(data));
     });
 
     panel.on('zone.clear', (data) => {
@@ -102,7 +100,7 @@ function _module(config) {
 
             });
 
-        logger.debug(data);
+        logger.debug(JSON.stringify(data));
     });
 
     this.getDevices = () => {
