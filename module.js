@@ -58,7 +58,7 @@ function _module(config) {
 
     statusCache.on( 'set', function( key, value ){
         let data = JSON.stringify( { module: global.moduleName, id : key, value : value });
-        logger.debug( 'sentinel.device.update => ' + data );
+        logger.info( 'sentinel.device.update => ' + data );
         pub.publish( 'sentinel.device.update', data);
     });
 
@@ -84,7 +84,7 @@ function _module(config) {
 
             });
 
-        logger.debug(JSON.stringify(data));
+        logger.trace(JSON.stringify(data));
     });
 
     panel.on('zone.clear', (data) => {
@@ -100,8 +100,38 @@ function _module(config) {
 
             });
 
-        logger.debug(JSON.stringify(data));
+        logger.trace(JSON.stringify(data));
     });
+
+    panel.on('panel.data', (data) => {
+
+        delete data.flags.backlight;
+        delete data.flags.programming;
+        delete data.flags.beep;
+        delete data.flags.bypass;
+        delete data.flags.low_battery;
+        delete data.flags.armed_zero_entry_delay;
+        delete data.flags.check_zone;
+        delete data.flags.perimeter_only;
+
+        delete data.zone;
+
+        statusCache.set( config.id, data );
+
+        logger.trace(JSON.stringify(data));
+    });
+
+    this.setChimeMode = ( mode ) => {
+        return panel.setChimeMode( mode );
+    };
+
+    this.disarm = () => {
+        return panel.setMode( 'disarm' );
+    };
+
+    this.setMode = ( mode ) => {
+        return panel.setMode( mode );
+    };
 
     this.getDevices = () => {
 
@@ -170,6 +200,14 @@ function _module(config) {
         return new Promise( ( fulfill, reject ) => {
 
             let devices = [];
+
+            let d = {
+                id: config.id,
+                name: config.name,
+                type: 'alarm.panel'
+            };
+
+            deviceCache.set(d.id, d);
 
             panel.getZones()
                 .then( (zones) =>{

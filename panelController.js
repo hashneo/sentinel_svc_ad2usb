@@ -148,10 +148,13 @@ function PanelController(address, port){
         asyncGetZones();
 
         function reconnect (){
-            setTimeout(() => {
-                //client.removeAllListeners(); // the important line that enables you to reopen a connection
-                connect()
-            }, 1000)
+            if ( client ) {
+                client = null;
+                setTimeout(() => {
+                    //client.removeAllListeners(); // the important line that enables you to reopen a connection
+                    connect()
+                }, 1000)
+            }
         }
     }
 
@@ -169,6 +172,7 @@ function PanelController(address, port){
         d.flags.ready = part.shift() === '1';
         d.flags.armed_away = part.shift() === '1';
         d.flags.armed_stay = part.shift() === '1';
+        d.flags.disarmed = !d.flags.armed_away && !d.flags.armed_stay;
         d.flags.backlight = part.shift() === '1';
         d.flags.programming = part.shift() === '1';
         d.flags.beep = part.shift();
@@ -185,11 +189,20 @@ function PanelController(address, port){
 
         panelState = d;
 
+        let r = /ARMED\s+\*{3}(\w+)\*{3}May\s+Exit\s+Now\s+(\d+)/i;
+
+        let match;
+
+        if ( ( match = r.exec( d.message ) ) != null )  {
+            d.flags.exit_delay = parseInt(match[2]);
+            d.flags.arming = true;
+        }
+
         if ( panelCommand != null ){
             panelCommand.process(d);
         }
 
-        if ( !d.flags.ready ) {
+        if ( !d.flags.ready && d.flags.exit_delay === undefined ) {
 
             if ( d.message.indexOf('Hit * for faults') !== -1 ){
                 send( '*', () => { return true },3000 );
@@ -263,7 +276,7 @@ function PanelController(address, port){
         if ( data.length === 0 )
             return;
 
-        logger.debug (`==> '${data}'`);
+        logger.trace(`==> '${data}'`);
 
         that.emit('raw.data', data);
 
@@ -476,10 +489,88 @@ function PanelController(address, port){
 
     };
 
+    this.setChimeMode = ( mode ) => {
+        return new Promise( (fulfill, reject) => {
+
+            let expectedState;
+            switch ( mode ){
+                case 'on':
+                    if ( panelState.flags.chime ){
+                        return fulfill();
+                    }
+                    expectedState = true;
+                    break;
+                case 'off':
+                    if ( !panelState.flags.chime ){
+                        return fulfill();
+                    }
+                    expectedState = false;
+                    break;
+                default:
+                    return reject(`${mode} is unknown`);
+            }
+
+            send(config.securityCode + '9', (panel) => {
+                return panel.flags.chime === expectedState;
+            }, 30000)
+                .then ( () => {
+                    fulfill();
+                })
+                .catch( (err) => {
+                    reject(err);
+                });
+        });
+    };
+
+    this.setMode = ( mode ) => {
+        return new Promise( (fulfill, reject) => {
+
+            let code;
+            let f = null;
+
+            switch ( mode ){
+                case 'disarm':
+                    code = '1';
+                    f = (panel) => {
+                        return panel.flags.disarmed;
+                    };
+                    break;
+                case 'away':
+                    if ( !panelState.flags || !panelState.flags.ready ){
+                        return reject( new Error('not ready') );
+                    }
+                    code = '2';
+                    f = (panel) => {
+                        return panel.flags.armed_away;
+                    };
+                    break;
+                case 'stay':
+                    if ( !panelState.flags || !panelState.flags.ready ){
+                        return reject( new Error('not ready') );
+                    }
+                    code = '3';
+                    f = (panel) => {
+                        return panel.flags.armed_stay;
+                    };
+                    break;
+                default:
+                    return reject(`${mode} is unknown`);
+            }
+
+            send(config.securityCode + code, f, 30000)
+                .then ( () => {
+                    fulfill();
+                })
+                .catch( (err) => {
+                    reject(err);
+                });
+        });
+    };
+
     function send ( cmd, func, t ) {
         return new Promise( (fulfill, reject) => {
 
-            logger.debug (`<== '${cmd}'`);
+            logger.trace(`<== '${cmd}'`);
 
             panelCommand = {
                 write: () => {
