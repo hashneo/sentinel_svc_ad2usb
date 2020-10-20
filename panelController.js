@@ -122,21 +122,21 @@ function PanelController(address, port){
         client.setKeepAlive(true,20000);
         client.setTimeout(60000);
 
-        logger.debug(`connecting to ${address}:${port}`);
+        logger.info(`connecting to ${address}:${port}`);
         client.connect(port, address);
 
         client.on('timeout', () => {
-            logger.debug('connection timeout');
+            logger.error('connection timeout');
             reconnect();
         });
 
         client.on('error', (err) => {
-            logger.debug(`connection err => ${err}`);
+            logger.error(`connection err => ${err}`);
             reconnect();
         });
 
         client.on('close', () => {
-            logger.debug('connection closed');
+            logger.error('connection closed');
             reconnect();
         });
 
