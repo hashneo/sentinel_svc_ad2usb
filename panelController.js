@@ -148,6 +148,9 @@ function PanelController(address, port){
         asyncGetZones();
 
         function reconnect (){
+            logger.info('socket lost, committing suicide');
+            process.exit(1);
+            /*
             if ( client ) {
                 client = null;
                 setTimeout(() => {
@@ -155,6 +158,7 @@ function PanelController(address, port){
                     connect()
                 }, 1000)
             }
+             */
         }
     }
 
