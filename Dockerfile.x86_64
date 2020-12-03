@@ -1,7 +1,10 @@
 FROM mhart/alpine-node:latest
 
+ENV PYTHONUNBUFFERED=1
+
 #bash is used to run npm test inside the container
-RUN apk update && apk upgrade && apk --update add bash git && rm -rf /var/cache/apk/*
+RUN apk update && apk upgrade && apk --update add bash git make g++ python3 && rm -rf /var/cache/apk/* && ln -sf python3 /usr/bin/python
+RUN python3 -m ensurepip
 
 WORKDIR /src
 ADD . .
