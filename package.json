@@ -21,7 +21,7 @@
     "sentinel-common": "git+https://github.com/hashneo/sentinel_common.git",
     "q": "^1.4.1",
     "redis": "^2.6.2",
-    "request": "^2.75.0",
+    "request": "^2.88.2",
     "request-debug": "^0.2.0",
     "split": "^1.0.1",
     "superagent": "^4.0.0",
