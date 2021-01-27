@@ -70,15 +70,48 @@ function _module(config) {
     panel.on('rfx.data', (data) => {
     });
 
+    function setSensorTrippedState( data, type, value ){
+
+        let v;
+
+        switch ( type ){
+        case 'sensor.contact':
+            v = data.contact;
+            break;
+        case 'sensor.motion':
+            v = data.motion;
+            break;
+        case 'sensor.co2':
+            v = data.co2;
+            break;
+        case 'sensor.smoke':
+            v = data.smoke;
+            break;
+        }
+
+        if ( v !== undefined ) {
+            v.tripped.current = value;
+            if (value === true) {
+                v.tripped.last = new Date();
+            }
+        }
+
+        return data;
+    }
+
     panel.on('zone.trip', (data) => {
 
         let id = data.partition + '_' + data.number;
 
-        this.getDeviceStatus(id)
+        let deviceInfo;
+
+        this.getDevice(id)
+            .then( (data) =>{
+                deviceInfo = data;
+                return this.getDeviceStatus(id);
+            })
             .then( (status) =>{
-                status.tripped.current = true;
-                status.tripped.last = new Date();
-                statusCache.set(id, status);
+                statusCache.set(id, setSensorTrippedState( status, deviceInfo.type, true ) );
             })
             .catch( (err) => {
 
@@ -90,11 +123,28 @@ function _module(config) {
     panel.on('zone.clear', (data) => {
 
         let id = data.partition + '_' + data.number;
-
+/*
         this.getDeviceStatus(id)
             .then( (status) =>{
                 status.tripped.current = false;
                 statusCache.set(id, status);
+            })
+            .catch( (err) => {
+
+            });
+
+        logger.trace(JSON.stringify(data));
+
+*/
+        let deviceInfo;
+
+        this.getDevice(id)
+            .then( (data) =>{
+                deviceInfo = data;
+                return this.getDeviceStatus(id);
+            })
+            .then( (status) =>{
+                statusCache.set(id, setSensorTrippedState( status, deviceInfo.type, false ) );
             })
             .catch( (err) => {
 
@@ -167,6 +217,23 @@ function _module(config) {
         });
     };
 
+    this.getDevice = (id) => {
+
+        return new Promise( (fulfill, reject) => {
+            try {
+                deviceCache.get(id, (err, value) => {
+                    if (err)
+                        return reject(err);
+
+                    fulfill(value);
+                }, true);
+            }catch(err){
+                reject(err);
+            }
+        });
+
+    };
+
     this.getDeviceStatus = (id) => {
 
         return new Promise( (fulfill, reject) => {
@@ -217,6 +284,7 @@ function _module(config) {
                         let zone = zones[i];
 
                         let type;
+                        let subType;
 
                         switch (zone.type){
                             case '00': // disabled
@@ -224,10 +292,12 @@ function _module(config) {
                             case '01': // Entry/Exit 01
                             case '02': // Entry/Exit 02
                             case '03': // Perimeter
-                                type = 'sensor.contact';
+                                type = 'sensor';
+                                subType = 'contact';
                                 break;
                             case '04': // Interior Follower
-                                type = 'sensor.motion';
+                                type = 'sensor';
+                                subType = 'motion';
                                 break;
                             case '05': // Trouble Day/Alarm Night
                                 break;
@@ -238,18 +308,22 @@ function _module(config) {
                             case '08': // 24-Hr Aux
                                 break;
                             case '09': // Fire
-                                type = 'sensor.smoke';
+                                type = 'sensor';
+                                subType = 'smoke';
                                 break;
                             case '10': // Interior w/Delay
-                                type = 'sensor.motion';
+                                type = 'sensor';
+                                subType = 'motion';
                                 break;
                             case '12': // Monitor Zone
                                 break;
                             case '14': // Carbon Monoxide
-                                type = 'sensor.co2';
+                                type = 'sensor';
+                                subType = 'co2';
                                 break;
                             case '16': // Fire w/Delay
-                                type = 'sensor.smpke';
+                                type = 'sensor';
+                                subType = 'smoke';
                                 break;
                             case '20': // ARM/Stay (FOB)
                                 break;
@@ -275,12 +349,14 @@ function _module(config) {
                             let d = {
                                 id: zone.partition + '_' + zone.number,
                                 name: zone.name,
-                                type: type
+                                type: type + (subType !== undefined ? '.' + subType : '' )
                             };
 
                             deviceCache.set(d.id, d);
 
-                            let s = {
+                            let s = {};
+
+                            s[subType] = {
                                 armed : true,
                                 tripped: {
                                     last : null,
