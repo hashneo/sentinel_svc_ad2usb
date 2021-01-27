@@ -99,6 +99,37 @@ function _module(config) {
         return data;
     }
 
+    panel.on('panel.connected', (data) => {
+
+        that.getDeviceStatus( (config.id) )
+            .then((status) =>{
+                if ( status == null )
+                    return;
+                status.connected = true;
+                statusCache.set( config.id, status );
+                logger.trace(JSON.stringify(status));
+            })
+            .catch( (err) =>{
+                if ( err.errorcode !== "ENOTFOUND")
+                    logger.error(err);
+            });
+    });
+
+    panel.on('panel.disconnected', (data) => {
+
+        that.getDeviceStatus( (config.id) )
+            .then((status) =>{
+                if ( status == null )
+                    return;
+                status.connected = false;
+                statusCache.set( config.id, status );
+                logger.trace(JSON.stringify(status));
+            })
+            .catch( (err) =>{
+                logger.error(err);
+            });
+    });
+
     panel.on('zone.trip', (data) => {
 
         let id = data.partition + '_' + data.number;
@@ -123,19 +154,7 @@ function _module(config) {
     panel.on('zone.clear', (data) => {
 
         let id = data.partition + '_' + data.number;
-/*
-        this.getDeviceStatus(id)
-            .then( (status) =>{
-                status.tripped.current = false;
-                statusCache.set(id, status);
-            })
-            .catch( (err) => {
 
-            });
-
-        logger.trace(JSON.stringify(data));
-
-*/
         let deviceInfo;
 
         this.getDevice(id)
@@ -155,20 +174,34 @@ function _module(config) {
 
     panel.on('panel.data', (data) => {
 
-        delete data.flags.backlight;
-        delete data.flags.programming;
-        delete data.flags.beep;
-        delete data.flags.bypass;
-        delete data.flags.low_battery;
-        delete data.flags.armed_zero_entry_delay;
-        delete data.flags.check_zone;
-        delete data.flags.perimeter_only;
+        that.getDeviceStatus( (config.id) )
+            .then((status) =>{
 
-        delete data.zone;
+                if ( status == null )
+                    return;
 
-        statusCache.set( config.id, data );
+                delete data.flags.backlight;
+                delete data.flags.programming;
+                delete data.flags.beep;
+                delete data.flags.bypass;
+                delete data.flags.low_battery;
+                delete data.flags.armed_zero_entry_delay;
+                delete data.flags.check_zone;
+                delete data.flags.perimeter_only;
 
-        logger.trace(JSON.stringify(data));
+                delete data.zone;
+
+                status = merge(status, data);
+
+                statusCache.set( config.id, status );
+
+                logger.trace(JSON.stringify(status));
+            })
+            .catch( (err) =>{
+                if ( err.errorcode !== "ENOTFOUND")
+                    logger.error(err);
+            });
+
     });
 
     this.setChimeMode = ( mode ) => {
@@ -275,6 +308,8 @@ function _module(config) {
             };
 
             deviceCache.set(d.id, d);
+
+            statusCache.set( d.id, {} );
 
             panel.getZones()
                 .then( (zones) =>{

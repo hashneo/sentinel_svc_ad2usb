@@ -123,7 +123,11 @@ function PanelController(address, port){
         client.setTimeout(60000);
 
         logger.info(`connecting to ${address}:${port}`);
-        client.connect(port, address);
+
+        client.on('connect', () => {
+            logger.info(`connected to ${address}:${port}`);
+            that.emit('panel.connected');
+        });
 
         client.on('timeout', () => {
             logger.error('connection timeout');
@@ -140,6 +144,8 @@ function PanelController(address, port){
             reconnect();
         });
 
+        client.connect(port, address);
+
         client.pipe(split()).on('data', (data) => {
             read(data.toString('ascii'));
         });
@@ -149,6 +155,7 @@ function PanelController(address, port){
 
         function reconnect (){
             if ( client ) {
+                that.emit('panel.disconnected');
                 client = null;
                 setTimeout(() => {
                     //client.removeAllListeners(); // the important line that enables you to reopen a connection
@@ -164,7 +171,9 @@ function PanelController(address, port){
         let d = {
             flags: {},
             zone: parseInt(data[3]),
-            message: data[5]
+            message: data[5],
+            updated: new Date().toISOString(),
+            connected: true
         };
 
         let part = data[1].split('');
