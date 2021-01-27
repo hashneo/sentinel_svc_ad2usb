@@ -204,16 +204,49 @@ function _module(config) {
 
     });
 
-    this.setChimeMode = ( mode ) => {
-        return panel.setChimeMode( mode );
+    this.setChimeState = ( id, state ) => {
+        return new Promise( (fulfill, reject) => {
+
+            this.getDevice(id)
+                .then( () =>{
+                    panel.setChimeState( state  )
+                        .then( (data)=>{
+                            fulfill(data);
+                        })
+                        .catch( (err) => {
+                            reject(err);
+                        });
+                })
+                .catch( (err) => {
+                    reject({code: '404', message: 'not found'});
+                });
+        });
+
     };
 
-    this.disarm = () => {
-        return panel.setMode( 'disarm' );
+    this.disarm = (id) => {
+        return this.setMode( id, 'disarm' );
     };
 
-    this.setMode = ( mode ) => {
-        return panel.setMode( mode );
+    this.setMode = ( id, mode ) => {
+
+        return new Promise( (fulfill, reject) => {
+
+            this.getDevice(id)
+                .then( () =>{
+                    panel.setMode( mode )
+                        .then( (data)=>{
+                            fulfill(data);
+                        })
+                        .catch( (err) => {
+                            reject(err);
+                        });
+                })
+                .catch( (err) => {
+                    reject({code: '404', message: 'not found'});
+                });
+        });
+
     };
 
     this.getDevices = () => {

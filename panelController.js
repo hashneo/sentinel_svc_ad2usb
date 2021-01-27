@@ -205,6 +205,9 @@ function PanelController(address, port){
         if ( ( match = r.exec( d.message ) ) != null )  {
             d.flags.exit_delay = parseInt(match[2]);
             d.flags.arming = true;
+        } else {
+            d.flags.exit_delay = null;
+            d.flags.arming = false;
         }
 
         if ( panelCommand != null ){
@@ -498,11 +501,11 @@ function PanelController(address, port){
 
     };
 
-    this.setChimeMode = ( mode ) => {
+    this.setChimeState = ( state ) => {
         return new Promise( (fulfill, reject) => {
 
             let expectedState;
-            switch ( mode ){
+            switch ( state ){
                 case 'on':
                     if ( panelState.flags.chime ){
                         return fulfill();
@@ -580,6 +583,9 @@ function PanelController(address, port){
         return new Promise( (fulfill, reject) => {
 
             logger.trace(`<== '${cmd}'`);
+
+            if ( !panelState.connected )
+                return reject( new Error('not connected') );
 
             panelCommand = {
                 write: () => {

@@ -105,13 +105,18 @@ paths:
         default:
           $ref: '#/responses/Error'
 
-  /mode/disarm:
+  /alarm/{id}/mode/disarm:
     x-swagger-router-controller: alarm
     get:
       operationId: disarm
       security:
         - Oauth:
             - user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
       responses:
         200:
           description: ok
@@ -120,7 +125,7 @@ paths:
         default:
           $ref: '#/responses/Error'
 
-  /mode/arm/{state}:
+  /alarm/{id}/mode/arm/{mode}:
     x-swagger-router-controller: alarm
     get:
       operationId: setMode
@@ -129,7 +134,11 @@ paths:
             - user
       parameters:
         - in: path
-          name: state
+          name: id
+          required: true
+          type: string
+        - in: path
+          name: mode
           required: true
           type: string
           enum: [
@@ -144,7 +153,7 @@ paths:
         default:
           $ref: '#/responses/Error'
 
-  /chime/{state}:
+  /alarm/{id}/chime/{state}:
     x-swagger-router-controller: alarm
     get:
       operationId: setChimeMode
@@ -152,6 +161,10 @@ paths:
         - Oauth:
             - user
       parameters:
+        - in: path
+          name: id
+          required: true
+          type: string
         - in: path
           name: state
           required: true
