@@ -214,7 +214,7 @@ function PanelController(address, port){
             panelCommand.process(d);
         }
 
-        if ( !d.flags.ready && d.flags.exit_delay === undefined ) {
+        if ( !d.flags.ready && (d.flags.exit_delay === undefined || d.flags.exit_delay === null) ) {
 
             if ( d.message.indexOf('Hit * for faults') !== -1 ){
                 send( '*', () => { return true },3000 );
